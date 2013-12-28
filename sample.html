@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>prettyLines</title>
+    <meta charset="utf-8">
+    <style>
+        /* GLOBAL */
+        html, body, * {margin: 0; padding: 0; border: none; }
+        /* CANVAS */
+        canvas {border: solid 1px #dedede;}
+        #activityCanvas  {cursor: default; }
+    </style>
+</head>
+<body>
+
+<canvas id="activityCanvas" width="729" height="658"></canvas>
+
+<script type="text/javascript" src="prettyLines.js"></script>
+<script>
+    var prettyLines = new PrettyLines({canvas: "activityCanvas", lineColor: "#333333"});
+</script>
+
+</body>
+</html>

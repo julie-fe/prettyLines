@@ -87,6 +87,9 @@ var PrettyLines = (function (opt) {
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(BEZIER_LINE_CANVAS_ID, canvasWidth, canvasHeight));
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(TMP_CANVAS_ID, canvasWidth, canvasHeight));
 
+        document.getElementById(BEZIER_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
+        document.getElementById(TMP_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0;');
+
         var __retTmp = initializeCanvas(TMP_CANVAS_ID, tmp_context, canvas);
         tmp_canvas = __retTmp.canvas;
         tmp_context = __retTmp.context;

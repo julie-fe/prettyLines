@@ -1,0 +1,21 @@
+{
+    "name": "pretty lines",
+    "version": "1.0.0",
+    "homepage": "https://github.com/julie-fe/prettyLines",
+    "authors": [
+        "Julie Fe"
+    ],
+    "description": "small canvas sketching plugin to draw smooth lines",
+    "main": [
+        "./prettyLines.js"
+    ],
+    "keywords": [
+        "pretty",
+        "lines",
+        "html5"
+    ],
+    "license": "MIT",
+    "ignore": [
+        "**/.*"
+    ]
+}

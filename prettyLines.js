@@ -237,7 +237,7 @@ var PrettyLines = (function (opt) {
                     var start_point = canvas_points[0];
                     bezierLine_context.beginPath();
                     bezierLine_context.arc(start_point.x, start_point.y, bezierLine_context.lineWidth / 2, 0, Math.PI * 2, false);
-                    bezierLine_context.fillStyle = '#ececec';
+                    bezierLine_context.fillStyle = strokeStyle;
                     bezierLine_context.fill();
                     bezierLine_context.closePath();
                 } else {

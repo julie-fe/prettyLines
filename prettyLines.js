@@ -210,7 +210,7 @@ var PrettyLines = (function (opt) {
 
                 bezierLine_context.stroke();
 
-                self.sendDrawnLines(bezierLine_canvas);
+                drawCallback(canvas.toDataURL("image/png"));
 
                 if(canvas_points.length > 36) {
 
@@ -252,7 +252,7 @@ var PrettyLines = (function (opt) {
                     drawLastNotPrettyPointsWithBezierCurve();
                 }
 
-                self.sendDrawnLines(bezierLine_canvas);
+                drawCallback(canvas.toDataURL("image/png"));
 
                 context.drawImage(bezierLine_canvas, 0, 0);
 
@@ -300,9 +300,10 @@ var PrettyLines = (function (opt) {
         context.strokeStyle = strokeStyle;
     };
 
-    self.sendDrawnLines = function(canvas) {
-        // send your lines
-        //self.receiveDrawnLines(canvas.toDataURL("image/png"));
+    var drawCallback = function(a) {};
+
+    self.onDraw = function(callback) {
+        drawCallback = callback;
     };
 
     self.receiveDrawnLines = function (string) {

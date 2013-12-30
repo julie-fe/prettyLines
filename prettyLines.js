@@ -16,6 +16,8 @@ var PrettyLines = (function (opt) {
         tmp_canvas,
         bezierLine_context,
         bezierLine_canvas,
+        incomingLine_context,
+        incomingLine_canvas,
         canvas_points = [],
         bezier_canvas_points = [],
         errors = [
@@ -26,12 +28,9 @@ var PrettyLines = (function (opt) {
         TMP_CANVAS_ID = "tmpCanvas",
         CANVAS_CONTAINER_ID = "canvasContainer",
         BEZIER_LINE_CANVAS_ID = "beautyCanvas",
+        INCOMING_LINE_CANVAS_ID = "incomingCanvas",
         MAIN_CANVAS_ID = opt.canvas
         ;
-
-    function clearCanvas(context) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
-    }
 
     function initializeCanvas(canvasID, context, parentCanvas) {
         var canvas = document.querySelector("#" + canvasID);
@@ -84,9 +83,11 @@ var PrettyLines = (function (opt) {
         canvasContainer.appendChild(document.querySelector("#" + MAIN_CANVAS_ID));
         parent.insertBefore(canvasContainer, parent.childNodes[position]);
 
+        document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(INCOMING_LINE_CANVAS_ID, canvasWidth, canvasHeight));
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(BEZIER_LINE_CANVAS_ID, canvasWidth, canvasHeight));
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(TMP_CANVAS_ID, canvasWidth, canvasHeight));
 
+        document.getElementById(INCOMING_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
         document.getElementById(BEZIER_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
         document.getElementById(TMP_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0;');
 
@@ -97,6 +98,10 @@ var PrettyLines = (function (opt) {
         var __retBez = initializeCanvas(BEZIER_LINE_CANVAS_ID, bezierLine_context, canvas);
         bezierLine_canvas = __retBez.canvas;
         bezierLine_context = __retBez.context;
+
+         var __retIncoming = initializeCanvas(INCOMING_LINE_CANVAS_ID, incomingLine_context, canvas);
+         incomingLine_canvas = __retIncoming.canvas;
+         incomingLine_context = __retIncoming.context;
 
         tool = new Tool_Pencil();
 
@@ -169,8 +174,8 @@ var PrettyLines = (function (opt) {
         this.mousemove = function (e) {
             if(tool.started) {
 
-                clearCanvas(tmp_context);
-                clearCanvas(bezierLine_context);
+                self.clearCanvas(tmp_context);
+                self.clearCanvas(bezierLine_context);
 
                 canvas_points.push({x: e._x, y: e._y});
 
@@ -205,6 +210,8 @@ var PrettyLines = (function (opt) {
 
                 bezierLine_context.stroke();
 
+                self.sendDrawnLines(bezierLine_canvas);
+
                 if(canvas_points.length > 36) {
 
                     drawLastNotPrettyPointsWithBezierCurve();
@@ -237,7 +244,7 @@ var PrettyLines = (function (opt) {
                     var start_point = canvas_points[0];
                     bezierLine_context.beginPath();
                     bezierLine_context.arc(start_point.x, start_point.y, bezierLine_context.lineWidth / 2, 0, Math.PI * 2, false);
-                    bezierLine_context.fillStyle = strokeStyle;
+                    bezierLine_context.fillStyle = '#ececec';
                     bezierLine_context.fill();
                     bezierLine_context.closePath();
                 } else {
@@ -245,10 +252,12 @@ var PrettyLines = (function (opt) {
                     drawLastNotPrettyPointsWithBezierCurve();
                 }
 
+                self.sendDrawnLines(bezierLine_canvas);
+
                 context.drawImage(bezierLine_canvas, 0, 0);
 
-                clearCanvas(tmp_context);
-                clearCanvas(bezierLine_context);
+                self.clearCanvas(tmp_context);
+                self.clearCanvas(bezierLine_context);
 
                 resetPointArrayAndPointCounter();
 
@@ -284,6 +293,34 @@ var PrettyLines = (function (opt) {
         setTimeout(function () {
             self.init();
         }, 0);
+    }
+
+    self.setLineColor = function(col) {
+        strokeStyle = col;
+        context.strokeStyle = strokeStyle;
+    };
+
+    self.sendDrawnLines = function(canvas) {
+        // send your lines
+        //self.receiveDrawnLines(canvas.toDataURL("image/png"));
+    };
+
+    self.receiveDrawnLines = function (string) {
+        blob2canvas(string);
+        context.drawImage(incomingLine_canvas, 0, 0);
+        self.clearCanvas(incomingLine_context);
+    };
+
+    function blob2canvas(blob){
+        var img = new Image();
+        img.onload = function () {
+            incomingLine_context.drawImage(img,0,0);
+        };
+        img.src = blob;
+    }
+
+    self.clearCanvas = function (context) {
+        context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
 });

@@ -99,9 +99,9 @@ var PrettyLines = (function (opt) {
         bezierLine_canvas = __retBez.canvas;
         bezierLine_context = __retBez.context;
 
-         var __retIncoming = initializeCanvas(INCOMING_LINE_CANVAS_ID, incomingLine_context, canvas);
-         incomingLine_canvas = __retIncoming.canvas;
-         incomingLine_context = __retIncoming.context;
+        var __retIncoming = initializeCanvas(INCOMING_LINE_CANVAS_ID, incomingLine_context, canvas);
+        incomingLine_canvas = __retIncoming.canvas;
+        incomingLine_context = __retIncoming.context;
 
         tool = new Tool_Pencil();
 
@@ -265,6 +265,10 @@ var PrettyLines = (function (opt) {
             }
         }
     }
+
+    document.onmouseup = function(e){
+        tool.mouseup(e);
+    };
 
     var config = {
         autoInit: true,

@@ -163,10 +163,23 @@ var PrettyLines = (function (opt) {
         this.started = false;
 
         this.mousedown = function (e) {
-            canvas_points.push({x: e._x, y: e._y});
-            bezier_canvas_points.push({x: e._x, y: e._y});
-            lastLinesAt = 0;
-            tool.started = true;
+            switch (e.which) {
+                case 1:
+                    canvas_points.push({x: e._x, y: e._y});
+                    bezier_canvas_points.push({x: e._x, y: e._y});
+                    lastLinesAt = 0;
+                    tool.started = true;
+                    break;
+                case 2:
+                    //alert('Middle mouse button pressed');
+                    break;
+                case 3:
+                    tool.started = false;
+                    break;
+                default:
+                    //alert('You have a strange mouse');
+            }
+
         };
 
         var xBeforeEvent, yBeforeEvent;
@@ -244,7 +257,7 @@ var PrettyLines = (function (opt) {
                     var start_point = canvas_points[0];
                     bezierLine_context.beginPath();
                     bezierLine_context.arc(start_point.x, start_point.y, bezierLine_context.lineWidth / 2, 0, Math.PI * 2, false);
-                    bezierLine_context.fillStyle = '#ececec';
+                    bezierLine_context.fillStyle = strokeStyle;
                     bezierLine_context.fill();
                     bezierLine_context.closePath();
                 } else {

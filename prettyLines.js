@@ -4,7 +4,7 @@ var PrettyLines = (function (opt) {
         initialized = false,
         canvas,
         context,
-        lineWidth = 5,
+        lineWidth = 4,
         lineJoin = "round",
         lineCap = "round",
         strokeStyle = opt.lineColor,
@@ -142,14 +142,16 @@ var PrettyLines = (function (opt) {
 
     function drawLastNotPrettyPointsWithBezierCurve() {
         bezierLine_context.beginPath();
-        if(lastLinesAt-1 >= 0) {
-            bezierLine_context.moveTo(canvas_points[lastLinesAt-1].x, canvas_points[lastLinesAt-1].y);
-        } else {
-            bezierLine_context.moveTo(canvas_points[lastLinesAt].x, canvas_points[lastLinesAt].y);
+        var tmpLastLinesAt = lastLinesAt;
+        if(lastLinesAt-2 >= 0) {
+            tmpLastLinesAt = lastLinesAt-2;
+        } else if(lastLinesAt-1 >= 0) {
+            tmpLastLinesAt = lastLinesAt-1;
         }
 
+        bezierLine_context.moveTo(canvas_points[tmpLastLinesAt].x, canvas_points[tmpLastLinesAt].y);
 
-        for (var i = lastLinesAt; i < canvas_points.length - 2; i++) {
+        for (var i = tmpLastLinesAt; i < canvas_points.length - 2; i++) {
             var f = (canvas_points[i + 1].x + canvas_points[i + 2].x) / 2;
             var g = (canvas_points[i + 1].y + canvas_points[i + 2].y) / 2;
             bezierLine_context.bezierCurveTo(canvas_points[i].x, canvas_points[i].y, canvas_points[i + 1].x, canvas_points[i + 1].y, f, g);
@@ -187,16 +189,16 @@ var PrettyLines = (function (opt) {
         this.mousemove = function (e) {
             if(tool.started) {
 
-                self.clearCanvas(tmp_context);
                 self.clearCanvas(bezierLine_context);
+                self.clearCanvas(tmp_context);
 
                 canvas_points.push({x: e._x, y: e._y});
 
                 xBeforeEvent = bezier_canvas_points[bezier_canvas_points.length-1].x;
                 yBeforeEvent = bezier_canvas_points[bezier_canvas_points.length-1].y;
 
-                if(e._x > xBeforeEvent + 6 || e._x < xBeforeEvent - 6 ||
-                    e._y > yBeforeEvent + 6 || e._y < yBeforeEvent - 6) {
+                if(e._x > xBeforeEvent + 4 || e._x < xBeforeEvent - 4 ||
+                    e._y > yBeforeEvent + 4 || e._y < yBeforeEvent - 4) {
                     bezier_canvas_points.push({x: e._x, y: e._y});
                     lastLinesAt = canvas_points.length-2;
                 }
@@ -204,7 +206,7 @@ var PrettyLines = (function (opt) {
                 tmp_context.beginPath();
                 tmp_context.moveTo(canvas_points[0].x, canvas_points[0].y);
 
-                for (var i = 1; i < canvas_points.length - 3; i++) {
+                for (var i = 0; i < canvas_points.length - 3; i++) {
                     var f = (canvas_points[i+1].x + canvas_points[i + 2].x) / 2;
                     var g = (canvas_points[i+1].y + canvas_points[i + 2].y) / 2;
                     tmp_context.bezierCurveTo(canvas_points[i].x, canvas_points[i].y, canvas_points[i+1].x, canvas_points[i+1].y, f, g);
@@ -215,7 +217,7 @@ var PrettyLines = (function (opt) {
                 bezierLine_context.beginPath();
                 bezierLine_context.moveTo(bezier_canvas_points[0].x, bezier_canvas_points[0].y);
 
-                for (i = 1; i < bezier_canvas_points.length-2; i++) {
+                for (i = 0; i < bezier_canvas_points.length-2; i++) {
                     f = (bezier_canvas_points[i+1].x + bezier_canvas_points[i + 2].x) / 2;
                     g = (bezier_canvas_points[i+1].y + bezier_canvas_points[i + 2].y) / 2;
                     bezierLine_context.bezierCurveTo(bezier_canvas_points[i].x, bezier_canvas_points[i].y, bezier_canvas_points[i+1].x, bezier_canvas_points[i+1].y, f, g);
@@ -227,23 +229,21 @@ var PrettyLines = (function (opt) {
 
                 if(canvas_points.length > 36) {
 
-                    drawLastNotPrettyPointsWithBezierCurve();
+                    //drawLastNotPrettyPointsWithBezierCurve();
 
-                    var xTmp3 = canvas_points[canvas_points.length-2].x;
-                    var yTmp3 = canvas_points[canvas_points.length-2].y;
+                    var xTmpCanvasPoints = canvas_points[canvas_points.length-2].x;
+                    var yTmpCanvasPoints = canvas_points[canvas_points.length-2].y;
 
-                    var xTmp = bezier_canvas_points[bezier_canvas_points.length-1].x;
-                    var xTmp2 = bezier_canvas_points[bezier_canvas_points.length-2].x;
-                    var yTmp = bezier_canvas_points[bezier_canvas_points.length-1].y;
-                    var yTmp2 = bezier_canvas_points[bezier_canvas_points.length-2].y;
+                    var xTmpBezierCanvasPoints = bezier_canvas_points[bezier_canvas_points.length-2].x;
+                    var yTmpBezierCanvasPoints = bezier_canvas_points[bezier_canvas_points.length-2].y;
 
                     resetPointArrayAndPointCounter();
 
-                    canvas_points.push({x: xTmp3, y: yTmp3});
+                    canvas_points.push({x: xTmpCanvasPoints, y: yTmpCanvasPoints});
                     canvas_points.push({x: e._x, y: e._y});
 
-                    bezier_canvas_points.push({x: xTmp2, y: yTmp2});
-                    bezier_canvas_points.push({x: xTmp, y: yTmp});
+                    bezier_canvas_points.push({x: xTmpBezierCanvasPoints, y: yTmpBezierCanvasPoints});
+                    bezier_canvas_points.push({x: e._x, y: e._y});
 
                     context.drawImage(bezierLine_canvas, 0, 0);
                 }
@@ -261,7 +261,10 @@ var PrettyLines = (function (opt) {
                     bezierLine_context.fill();
                     bezierLine_context.closePath();
                 } else {
-                    (canvas_points.length < 18) ? drawFirstNotPrettyPointsWithBezierCurve():"";
+                    if (canvas_points.length <= 36) {
+                        self.clearCanvas(bezierLine_context);
+                        drawFirstNotPrettyPointsWithBezierCurve();
+                    }
                     drawLastNotPrettyPointsWithBezierCurve();
                 }
 

@@ -16,10 +16,19 @@ var PrettyLines = (function (opt) {
         tmp_canvas,
         bezierLine_context,
         bezierLine_canvas,
+        xBeforeEvent,
+        yBeforeEvent,
         incomingLine_context,
         incomingLine_canvas,
+        bezierIncomingLine_context,
+        bezierIncomingLine_canvas,
         canvas_points = [],
         bezier_canvas_points = [],
+        incoming_canvas_points = [],
+        bezier_incoming_canvas_points = [],
+        xBeforeIncomingEvent,
+        yBeforeIncomingEvent,
+        incomingLastLinesAt,
         errors = [
             "error canvas element not found",
             "error canvas context not found",
@@ -29,6 +38,7 @@ var PrettyLines = (function (opt) {
         CANVAS_CONTAINER_ID = "canvasContainer",
         BEZIER_LINE_CANVAS_ID = "beautyCanvas",
         INCOMING_LINE_CANVAS_ID = "incomingCanvas",
+        BEZIER_INCOMING_LINE_CANVAS_ID = "bezierIncomingCanvas",
         MAIN_CANVAS_ID = opt.canvas
         ;
 
@@ -84,10 +94,12 @@ var PrettyLines = (function (opt) {
         parent.insertBefore(canvasContainer, parent.childNodes[position]);
 
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(INCOMING_LINE_CANVAS_ID, canvasWidth, canvasHeight));
+        document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(BEZIER_INCOMING_LINE_CANVAS_ID, canvasWidth, canvasHeight));
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(BEZIER_LINE_CANVAS_ID, canvasWidth, canvasHeight));
         document.querySelector("#" + CANVAS_CONTAINER_ID).appendChild(createAndGetCanvas(TMP_CANVAS_ID, canvasWidth, canvasHeight));
 
         document.getElementById(INCOMING_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
+        document.getElementById(BEZIER_INCOMING_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
         document.getElementById(BEZIER_LINE_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0; visibility: hidden');
         document.getElementById(TMP_CANVAS_ID).setAttribute('style', 'position: absolute; top: 0; left: 0;');
 
@@ -102,6 +114,10 @@ var PrettyLines = (function (opt) {
         var __retIncoming = initializeCanvas(INCOMING_LINE_CANVAS_ID, incomingLine_context, canvas);
         incomingLine_canvas = __retIncoming.canvas;
         incomingLine_context = __retIncoming.context;
+
+        var __retIncomingBez = initializeCanvas(BEZIER_INCOMING_LINE_CANVAS_ID, bezierIncomingLine_context, canvas);
+        bezierIncomingLine_canvas = __retIncomingBez.canvas;
+        bezierIncomingLine_context = __retIncomingBez.context;
 
         tool = new Tool_Pencil();
 
@@ -121,43 +137,81 @@ var PrettyLines = (function (opt) {
         }
     }
 
-    function resetPointArrayAndPointCounter() {
-        canvas_points = [];
-        bezier_canvas_points = [];
-        lastLinesAt = 0;
+    function resetPointArrayAndPointCounter(pointArray, bPointArray) {
+        pointArray.length = 0;
+        bPointArray.length = 0;
     }
 
-    function drawFirstNotPrettyPointsWithBezierCurve() {
-        bezierLine_context.beginPath();
-        bezierLine_context.moveTo(canvas_points[0].x, canvas_points[0].y);
-
-        for (var i = 0; i < lastLinesAt - 2; i++) {
-            var f = (canvas_points[i + 1].x + canvas_points[i + 2].x) / 2;
-            var g = (canvas_points[i + 1].y + canvas_points[i + 2].y) / 2;
-            bezierLine_context.bezierCurveTo(canvas_points[i].x, canvas_points[i].y, canvas_points[i + 1].x, canvas_points[i + 1].y, f, g);
-        }
-
-        bezierLine_context.stroke();
+    function drawPoint(pointArray, context) {
+        var start_point = pointArray[0];
+        context.beginPath();
+        context.arc(start_point.x, start_point.y, context.lineWidth / 2, 0, Math.PI * 2, false);
+        context.fillStyle = strokeStyle;
+        context.fill();
+        context.closePath();
     }
 
-    function drawLastNotPrettyPointsWithBezierCurve() {
-        bezierLine_context.beginPath();
-        var tmpLastLinesAt = lastLinesAt;
-        if(lastLinesAt-2 >= 0) {
-            tmpLastLinesAt = lastLinesAt-2;
-        } else if(lastLinesAt-1 >= 0) {
-            tmpLastLinesAt = lastLinesAt-1;
+    function drawFirstNotPrettyPointsWithBezierCurve(bContext, lastLine, lineArray) {
+        bContext.beginPath();
+        bContext.moveTo(lineArray[0].x, lineArray[0].y);
+
+        for (var i = 0; i < lastLine - 2; i++) {
+            var f = (lineArray[i + 1].x + lineArray[i + 2].x) / 2;
+            var g = (lineArray[i + 1].y + lineArray[i + 2].y) / 2;
+            bContext.bezierCurveTo(lineArray[i].x, lineArray[i].y, lineArray[i + 1].x, lineArray[i + 1].y, f, g);
         }
 
-        bezierLine_context.moveTo(canvas_points[tmpLastLinesAt].x, canvas_points[tmpLastLinesAt].y);
+        bContext.stroke();
+    }
 
-        for (var i = tmpLastLinesAt; i < canvas_points.length - 2; i++) {
-            var f = (canvas_points[i + 1].x + canvas_points[i + 2].x) / 2;
-            var g = (canvas_points[i + 1].y + canvas_points[i + 2].y) / 2;
-            bezierLine_context.bezierCurveTo(canvas_points[i].x, canvas_points[i].y, canvas_points[i + 1].x, canvas_points[i + 1].y, f, g);
+    function drawLastNotPrettyPointsWithBezierCurve(bContext,lastLine,pointArray) {
+        bContext.beginPath();
+        var tmpLastLinesAt = lastLine;
+        if(lastLine-2 >= 0) {
+            tmpLastLinesAt = lastLine-2;
+        } else if(lastLine-1 >= 0) {
+            tmpLastLinesAt = lastLine-1;
         }
 
-        bezierLine_context.stroke();
+        bContext.moveTo(pointArray[tmpLastLinesAt].x, pointArray[tmpLastLinesAt].y);
+
+        for (var i = tmpLastLinesAt; i < pointArray.length - 2; i++) {
+            var f = (pointArray[i + 1].x + pointArray[i + 2].x) / 2;
+            var g = (pointArray[i + 1].y + pointArray[i + 2].y) / 2;
+            bContext.bezierCurveTo(pointArray[i].x, pointArray[i].y, pointArray[i + 1].x, pointArray[i + 1].y, f, g);
+        }
+        bContext.stroke();
+    }
+
+    function drawPointsOnCanvas (context, pointArray, minusLength) {
+        context.beginPath();
+        context.moveTo(pointArray[0].x, pointArray[0].y);
+
+        for (var i = 0; i < pointArray.length - minusLength; i++) {
+            var f = (pointArray[i+1].x + pointArray[i + 2].x) / 2;
+            var g = (pointArray[i+1].y + pointArray[i + 2].y) / 2;
+            context.bezierCurveTo(pointArray[i].x, pointArray[i].y, pointArray[i+1].x, pointArray[i+1].y, f, g);
+        }
+
+        context.stroke();
+    }
+
+    function drawBezierCanvasOnCanvas(pointArray,bPointArray,x,y,bCanvas) {
+        var xTmpCanvasPoints = pointArray[pointArray.length-2].x;
+        var yTmpCanvasPoints = pointArray[pointArray.length-2].y;
+
+        var xTmpBezierCanvasPoints = bPointArray[bPointArray.length-2].x;
+        var yTmpBezierCanvasPoints = bPointArray[bPointArray.length-2].y;
+
+        resetPointArrayAndPointCounter(pointArray,bPointArray);
+
+        pointArray.push({x: xTmpCanvasPoints, y: yTmpCanvasPoints});
+        pointArray.push({x: x, y: y});
+
+        bPointArray.push({x: xTmpBezierCanvasPoints, y: yTmpBezierCanvasPoints});
+        bPointArray.push({x: x, y: y});
+
+        context.drawImage(bCanvas, 0, 0);
     }
 
     function Tool_Pencil() {
@@ -170,6 +224,7 @@ var PrettyLines = (function (opt) {
                     canvas_points.push({x: e._x, y: e._y});
                     bezier_canvas_points.push({x: e._x, y: e._y});
                     lastLinesAt = 0;
+                    drawStartCallback(e._x, e._y);
                     tool.started = true;
                     break;
                 case 2:
@@ -184,8 +239,6 @@ var PrettyLines = (function (opt) {
 
         };
 
-        var xBeforeEvent, yBeforeEvent;
-
         this.mousemove = function (e) {
             if(tool.started) {
 
@@ -193,6 +246,7 @@ var PrettyLines = (function (opt) {
                 self.clearCanvas(tmp_context);
 
                 canvas_points.push({x: e._x, y: e._y});
+                drawCallback(e._x, e._y);
 
                 xBeforeEvent = bezier_canvas_points[bezier_canvas_points.length-1].x;
                 yBeforeEvent = bezier_canvas_points[bezier_canvas_points.length-1].y;
@@ -203,49 +257,12 @@ var PrettyLines = (function (opt) {
                     lastLinesAt = canvas_points.length-2;
                 }
 
-                tmp_context.beginPath();
-                tmp_context.moveTo(canvas_points[0].x, canvas_points[0].y);
-
-                for (var i = 0; i < canvas_points.length - 3; i++) {
-                    var f = (canvas_points[i+1].x + canvas_points[i + 2].x) / 2;
-                    var g = (canvas_points[i+1].y + canvas_points[i + 2].y) / 2;
-                    tmp_context.bezierCurveTo(canvas_points[i].x, canvas_points[i].y, canvas_points[i+1].x, canvas_points[i+1].y, f, g);
-                }
-
-                tmp_context.stroke();
-
-                bezierLine_context.beginPath();
-                bezierLine_context.moveTo(bezier_canvas_points[0].x, bezier_canvas_points[0].y);
-
-                for (i = 0; i < bezier_canvas_points.length-2; i++) {
-                    f = (bezier_canvas_points[i+1].x + bezier_canvas_points[i + 2].x) / 2;
-                    g = (bezier_canvas_points[i+1].y + bezier_canvas_points[i + 2].y) / 2;
-                    bezierLine_context.bezierCurveTo(bezier_canvas_points[i].x, bezier_canvas_points[i].y, bezier_canvas_points[i+1].x, bezier_canvas_points[i+1].y, f, g);
-                }
-
-                bezierLine_context.stroke();
-
-                drawCallback(canvas.toDataURL("image/png"));
+                drawPointsOnCanvas(tmp_context,canvas_points,3);
+                drawPointsOnCanvas(bezierLine_context,bezier_canvas_points,2);
 
                 if(canvas_points.length > 36) {
-
-                    //drawLastNotPrettyPointsWithBezierCurve();
-
-                    var xTmpCanvasPoints = canvas_points[canvas_points.length-2].x;
-                    var yTmpCanvasPoints = canvas_points[canvas_points.length-2].y;
-
-                    var xTmpBezierCanvasPoints = bezier_canvas_points[bezier_canvas_points.length-2].x;
-                    var yTmpBezierCanvasPoints = bezier_canvas_points[bezier_canvas_points.length-2].y;
-
-                    resetPointArrayAndPointCounter();
-
-                    canvas_points.push({x: xTmpCanvasPoints, y: yTmpCanvasPoints});
-                    canvas_points.push({x: e._x, y: e._y});
-
-                    bezier_canvas_points.push({x: xTmpBezierCanvasPoints, y: yTmpBezierCanvasPoints});
-                    bezier_canvas_points.push({x: e._x, y: e._y});
-
-                    context.drawImage(bezierLine_canvas, 0, 0);
+                    drawBezierCanvasOnCanvas(canvas_points,bezier_canvas_points,e._x,e._y,bezierLine_canvas);
+                    lastLinesAt = 0;
                 }
             }
         };
@@ -253,29 +270,24 @@ var PrettyLines = (function (opt) {
         this.mouseup = function (e) {
             if(tool.started) {
 
+                drawEndCallback();
+
                 if(canvas_points.length < 3) {
-                    var start_point = canvas_points[0];
-                    bezierLine_context.beginPath();
-                    bezierLine_context.arc(start_point.x, start_point.y, bezierLine_context.lineWidth / 2, 0, Math.PI * 2, false);
-                    bezierLine_context.fillStyle = strokeStyle;
-                    bezierLine_context.fill();
-                    bezierLine_context.closePath();
+                    drawPoint(canvas_points, bezierLine_context);
                 } else {
                     if (canvas_points.length <= 36) {
                         self.clearCanvas(bezierLine_context);
-                        drawFirstNotPrettyPointsWithBezierCurve();
+                        drawFirstNotPrettyPointsWithBezierCurve(bezierLine_context,lastLinesAt,canvas_points);
                     }
-                    drawLastNotPrettyPointsWithBezierCurve();
+                    drawLastNotPrettyPointsWithBezierCurve(bezierLine_context, lastLinesAt, canvas_points);
                 }
 
-                drawCallback(canvas.toDataURL("image/png"));
-
                 context.drawImage(bezierLine_canvas, 0, 0);
-
                 self.clearCanvas(tmp_context);
                 self.clearCanvas(bezierLine_context);
 
-                resetPointArrayAndPointCounter();
+                resetPointArrayAndPointCounter(canvas_points,bezier_canvas_points);
+                lastLinesAt = 0;
 
                 tool.started = false;
             }
@@ -320,25 +332,76 @@ var PrettyLines = (function (opt) {
         context.strokeStyle = strokeStyle;
     };
 
-    var drawCallback = function(a) {};
+    var drawStartCallback = function(x,y) {};
+
+    self.onStartDraw = function(callback) {
+        drawStartCallback = callback;
+    };
+
+    self.receiveDrawStart = function (x,y) {
+        incoming_canvas_points.push({x: x, y: y});
+        bezier_incoming_canvas_points.push({x: x, y: y});
+        incomingLastLinesAt = 0;
+    };
+
+    var drawCallback = function(x, y) {};
 
     self.onDraw = function(callback) {
         drawCallback = callback;
     };
 
-    self.receiveDrawnLines = function (string) {
-        blob2canvas(string);
-        context.drawImage(incomingLine_canvas, 0, 0);
+    self.receiveDrawnLines = function (x, y) {
+
+        self.clearCanvas(bezierIncomingLine_context);
         self.clearCanvas(incomingLine_context);
+
+        incoming_canvas_points.push(x,y);
+
+        xBeforeIncomingEvent = bezier_canvas_points[bezier_canvas_points.length-1].x;
+        yBeforeIncomingEvent = bezier_canvas_points[bezier_canvas_points.length-1].y;
+
+        if(x > xBeforeIncomingEvent + 4 || x < xBeforeIncomingEvent - 4 ||
+            y > yBeforeIncomingEvent + 4 || y < yBeforeIncomingEvent - 4) {
+            bezier_incoming_canvas_points.push({x: x, y: y});
+            incomingLastLinesAt = canvas_points.length-2;
+        }
+
+        drawPointsOnCanvas(incomingLine_context,incoming_canvas_points,3);
+        drawPointsOnCanvas(bezierIncomingLine_context,bezier_incoming_canvas_points,2);
+
+        if(incoming_canvas_points.length > 36) {
+            drawBezierCanvasOnCanvas(incoming_canvas_points,bezier_incoming_canvas_points,x,y,bezierIncomingLine_canvas);
+            lastLinesAt = 0;
+        }
     };
 
-    function blob2canvas(blob){
-        var img = new Image();
-        img.onload = function () {
-            incomingLine_context.drawImage(img,0,0);
-        };
-        img.src = blob;
-    }
+    var drawEndCallback = function() {};
+
+    self.onDrawEnd = function(callback) {
+        drawEndCallback = callback;
+    };
+
+    self.receiveMouseUp = function() {
+        if(incoming_canvas_points.length != null && incoming_canvas_points.length != 0) {
+            if(incoming_canvas_points.length < 3) {
+                drawPoint(incoming_canvas_points, bezierIncomingLine_context);
+            } else {
+                if (incoming_canvas_points.length <= 36) {
+                    self.clearCanvas(bezierIncomingLine_context);
+                    drawFirstNotPrettyPointsWithBezierCurve(bezierIncomingLine_context, incomingLastLinesAt, incoming_canvas_points);
+                }
+                drawLastNotPrettyPointsWithBezierCurve(bezierIncomingLine_context, incomingLastLinesAt, incoming_canvas_points);
+            }
+        }
+
+        context.drawImage(bezierIncomingLine_canvas, 0, 0);
+        self.clearCanvas(incomingLine_context);
+        self.clearCanvas(bezierIncomingLine_context);
+
+        resetPointArrayAndPointCounter(incoming_canvas_points,bezier_incoming_canvas_points);
+        incomingLastLinesAt = 0;
+
+    };
 
     self.clearCanvas = function (context) {
         context.clearRect(0, 0, canvas.width, canvas.height);

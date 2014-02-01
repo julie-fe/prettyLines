@@ -124,6 +124,7 @@ var PrettyLines = (function (opt) {
         tmp_canvas.addEventListener('mousedown', e_canvas, false);
         tmp_canvas.addEventListener('mousemove', e_canvas, false);
         tmp_canvas.addEventListener('mouseup', e_canvas, false);
+        tmp_canvas.addEventListener("mouseout", e_canvas, false);
 
     }
 
@@ -291,7 +292,13 @@ var PrettyLines = (function (opt) {
 
                 tool.started = false;
             }
-        }
+        };
+
+        this.mouseout = function (e) {
+            canvas_points.push({x: e._x, y: e._y});
+            drawLastNotPrettyPointsWithBezierCurve(bezierLine_context, lastLinesAt, canvas_points);
+            tool.mouseup(e);
+        };
     }
 
     document.onmouseup = function(e){
@@ -334,7 +341,7 @@ var PrettyLines = (function (opt) {
 
     var drawStartCallback = function(x,y) {};
 
-    self.onStartDraw = function(callback) {
+    self.onDrawStart = function(callback) {
         drawStartCallback = callback;
     };
 
@@ -381,7 +388,7 @@ var PrettyLines = (function (opt) {
         drawEndCallback = callback;
     };
 
-    self.receiveMouseUp = function() {
+    self.receiveDrawEnd = function() {
         if(incoming_canvas_points.length != null && incoming_canvas_points.length != 0) {
             if(incoming_canvas_points.length < 3) {
                 drawPoint(incoming_canvas_points, bezierIncomingLine_context);
